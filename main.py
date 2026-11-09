@@ -214,6 +214,8 @@ class endec(QWidget):
                 cipher_text+=key[self.all_chars_list.index(letter)]
         with open (self.file_path,"w") as encrypted_file:
             encrypted_file.write(cipher_text)
+        self.encrypt_btn.setEnabled(False)
+        self.decrypt_btn.setEnabled(True)
         self.open_notepad()
     def perform_decrypt(self,key):
         with open(self.file_path,"r") as encrypted_file:
@@ -223,6 +225,8 @@ class endec(QWidget):
                 plane_text+=self.all_chars_list[key.index(letter)]
         with open (self.file_path,"w") as plane_file:
             plane_file.write(plane_text)
+        self.decrypt_btn.setEnabled(False)
+        self.encrypt_btn.setEnabled(True)
         self.open_notepad()
 
     def open_notepad(self):
