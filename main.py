@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt,QUrl
 class endec(QWidget):
     def __init__(self):
         super().__init__()
-        self.all_chars_list=list(string.ascii_letters+" "+string.punctuation+string.digits)
+        self.all_chars_list=list(string.ascii_letters+" "+string.punctuation+string.digits+"\n"+"\t")
         self.file_label=QLabel("File",self)
         self.file_name_label=QLabel("No file selected",self)
         self.browse_btn=QPushButton("Browse...",self)
@@ -201,7 +201,7 @@ class endec(QWidget):
     def perform_action(self):
         with open("encryption_keys.json","r") as json_file:
             key_dict=json.load(json_file)
-            current_key=key_dict[str(int(self.channel_name[-1])-1)]
+            current_key=key_dict[str(int(self.channel_name[8:])-1)]
         if self.mode=="Encrypt":
             self.perform_encrypt(current_key)
         elif self.mode=="Decrypt":
@@ -211,7 +211,7 @@ class endec(QWidget):
             plane_text=plane_file.read()
             cipher_text=""
             for letter in plane_text:
-                cipher_text+=key[self.all_chars_list.index(letter)]
+                    cipher_text+=key[self.all_chars_list.index(letter)]
         with open (self.file_path,"w") as encrypted_file:
             encrypted_file.write(cipher_text)
         self.encrypt_btn.setEnabled(False)
