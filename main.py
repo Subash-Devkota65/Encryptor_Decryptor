@@ -2,16 +2,18 @@
 import sys
 from PyQt5.QtWidgets import (QApplication,QWidget,QPushButton,QLabel,QLineEdit,QFileDialog,QComboBox,
                              QVBoxLayout,QHBoxLayout,QFrame,QButtonGroup)
-from PyQt5.QtGui import QIcon,QDesktopServices
+from PyQt5.QtGui import QIcon,QDesktopServices,QFontMetrics
 import string
 import json
 from PyQt5.QtCore import Qt,QUrl
+from pathlib import Path
+import os
 class endec(QWidget):
     def __init__(self):
         super().__init__()
         self.all_chars_list=list(string.ascii_letters+" "+string.punctuation+string.digits+"\n"+"\t")
         self.file_label=QLabel("File",self)
-        self.file_name_label=QLabel("No file selected",self)
+        self.file_name_label=QLineEdit("No file selected")
         self.browse_btn=QPushButton("Browse...",self)
         self.channel_label=QLabel("Channel",self)
         self.channel_dropdown=QComboBox(self)
@@ -19,10 +21,13 @@ class endec(QWidget):
         self.encrypt_btn=QPushButton("Encrypt",self)
         self.decrypt_btn=QPushButton("Decrypt",self)
         self.conform_msg_label=QLabel("Ready. Choose a file to begain.")
+        self.open_file_btn=QPushButton("Open",self)
         self.proceed_btn=QPushButton("Proceed",self)
         self.encrypt_btn.setCheckable(True)
         self.decrypt_btn.setCheckable(True)
         self.proceed_btn.setEnabled(False)
+        self.open_file_btn.setEnabled(False)
+        self.file_name_label.setReadOnly(True)
         self.inUI()
         self.dropdown_options()
         self.btnFunctionality()
@@ -47,8 +52,11 @@ class endec(QWidget):
         action_hbox.addWidget(self.encrypt_btn)
         action_hbox.addWidget(self.decrypt_btn)
         final_hbox=QHBoxLayout()
-        final_hbox.addWidget(self.conform_msg_label,3)
-        final_hbox.addWidget(self.proceed_btn,1)
+        final_hbox.addWidget(self.conform_msg_label,4)
+        final_btns=QHBoxLayout()
+        final_btns.addWidget(self.open_file_btn,3)
+        final_btns.addWidget(self.proceed_btn,4)
+        final_hbox.addLayout(final_btns,3)
         ###hbox
         vbox=QVBoxLayout(self)
         vbox.addWidget(title_frame)
@@ -80,6 +88,7 @@ class endec(QWidget):
         self.encrypt_btn.setObjectName("encrypt_btn")
         self.decrypt_btn.setObjectName("decrypt_btn")
         self.proceed_btn.setObjectName("proceed_btn")
+        self.open_file_btn.setObjectName("openfile_btn")
         self.channel_dropdown.setObjectName("channel_dropdown")
         self.conform_msg_label.setObjectName("conform_msg")
         ###CSS
@@ -88,6 +97,7 @@ class endec(QWidget):
         self.encrypt_btn.setFixedHeight(60)
         self.decrypt_btn.setFixedHeight(60)
         self.proceed_btn.setFixedHeight(60)
+        self.open_file_btn.setFixedHeight(60)
 
         vbox.setContentsMargins(0,0,0,30)
         body_vbox.setContentsMargins(40,25,40,10)
@@ -97,6 +107,7 @@ class endec(QWidget):
         channel_vbox.setSpacing(5)
         action_vbox.setSpacing(5)
         file_hbox.setSpacing(15)
+        final_btns.setSpacing(15)
 
         vbox.setAlignment(Qt.AlignTop)
         #makes it unable to have both btn checked
@@ -107,21 +118,21 @@ class endec(QWidget):
         self.encrypt_btn.setChecked(True)
         #Real CSS
         self.setStyleSheet("""
-        QLabel,QPushButton,QComboBox{
+        QLabel,QPushButton,QComboBox,QLineEdit{
         font-size:18px;
         font-family:Segoe UI;
         }
         QFrame#Title{
         background-color:#0F5C5C;
         }
-        QLabel#file_name{
+        QLineEdit#file_name{
         color#97a6ba;
         background-color:white;
         border:2px solid #a2a5a8;
         border-radius:10px;
         padding:10px;     
         }
-        QPushButton#browse_btn{
+        QPushButton#browse_btn,QPushButton#openfile_btn{
         font-size:20px;
         font-family:Segoe UI;
         border:2px solid #0F5C5C;
@@ -154,7 +165,7 @@ class endec(QWidget):
         color:white;
         border:2px solid #0F5C5C
         }
-        QPushButton#proceed_btn:disabled{
+        QPushButton#proceed_btn:disabled,QPushButton#openfile_btn:disabled{
         background: #e4e8ed;
         color: #9AA3AF;
         border-color: #D5DAE0;
@@ -173,12 +184,15 @@ class endec(QWidget):
         self.encrypt_btn.clicked.connect(lambda: self.get_action_type("Encrypt"))
         self.decrypt_btn.clicked.connect(lambda: self.get_action_type("Decrypt"))
         self.channel_dropdown.currentTextChanged.connect(self.get_channel_no)
+        self.open_file_btn.clicked.connect(self.open_notepad)
         self.proceed_btn.clicked.connect(self.perform_action)
     def browse_file(self):
         self.file_path,_=QFileDialog.getOpenFileName(self,"Select a file","","Text Files (*.txt)")
         self.file_name_label.setText(self.file_path)
-        self.proceed_btn.setEnabled(True)
-        self.update_confirmation_message()
+        if self.file_path:
+            self.open_file_btn.setEnabled(True)
+            self.proceed_btn.setEnabled(True)
+            self.update_confirmation_message()
     def get_action_type(self,action):
         self.mode=action
         if self.proceed_btn.isEnabled():
@@ -188,16 +202,15 @@ class endec(QWidget):
         if self.proceed_btn.isEnabled():
             self.update_confirmation_message()   
     def update_confirmation_message(self):
-        #acessing the file name from its path
-        file_name_list=[]
-        for letter in reversed(self.file_path):
-            if not letter == "/":
-                file_name_list.append(letter)
-            else:
-                break
-        file_name_list.reverse()
-        file_name=("").join(file_name_list)
-        self.conform_msg_label.setText(f"{self.mode} '{file_name}' via {self.channel_name}")
+        file_name =str(Path(self.file_path).name)
+        metrics = QFontMetrics(self.conform_msg_label.font())
+        if "(Encrypted)" in file_name:
+            file_name = file_name.replace("(Encrypted)", "")  
+            print(file_name)
+        short_file_name = metrics.elidedText(file_name, Qt.ElideMiddle,100)
+        if "(Encrypted)" in self.file_path:
+            short_file_name=short_file_name[0:-4]+"(Encrypted).txt"
+        self.conform_msg_label.setText(f"{self.mode} '{short_file_name}' via {self.channel_name}")
     def perform_action(self):
         with open("encryption_keys.json","r") as json_file:
             key_dict=json.load(json_file)
@@ -207,31 +220,42 @@ class endec(QWidget):
         elif self.mode=="Decrypt":
             self.perform_decrypt(current_key)
     def perform_encrypt(self,key):
-        with open(self.file_path,"r") as plane_file:
-            plane_text=plane_file.read()
-            cipher_text=""
-            for letter in plane_text:
-                    cipher_text+=key[self.all_chars_list.index(letter)]
-        with open (self.file_path,"w") as encrypted_file:
-            encrypted_file.write(cipher_text)
-        self.encrypt_btn.setEnabled(False)
-        self.decrypt_btn.setEnabled(True)
-        self.open_notepad()
+        if "(Encrypted)" not in self.file_path:
+            with open(self.file_path,"r") as plane_file:
+                plane_text=plane_file.read()
+                cipher_text=""
+                for letter in plane_text:
+                        cipher_text+=key[self.all_chars_list.index(letter)]
+            with open (self.file_path,"w") as encrypted_file:
+                encrypted_file.write(cipher_text)
+            p=Path(self.file_path)
+            new_path=p.with_name(p.stem+"(Encrypted)"+p.suffix)
+            p.rename(new_path)
+            self.file_path=str(new_path)
+            self.file_name_label.setText(self.file_path)
+            self.conform_msg_label.setText("Encrypted. Click Open to view the file")
+        else:
+            self.conform_msg_label.setText("File already encrypted.")
     def perform_decrypt(self,key):
-        with open(self.file_path,"r") as encrypted_file:
-            cipher_text=encrypted_file.read()
-            plane_text=""
-            for letter in cipher_text:
-                plane_text+=self.all_chars_list[key.index(letter)]
-        with open (self.file_path,"w") as plane_file:
-            plane_file.write(plane_text)
-        self.decrypt_btn.setEnabled(False)
-        self.encrypt_btn.setEnabled(True)
-        self.open_notepad()
+        if "(Encrypted)" in self.file_path:
+            with open(self.file_path,"r") as encrypted_file:
+                cipher_text=encrypted_file.read()
+                plane_text=""
+                for letter in cipher_text:
+                    plane_text+=self.all_chars_list[key.index(letter)]
+            with open (self.file_path,"w") as plane_file:
+                plane_file.write(plane_text)
+            p=Path(self.file_path)
+            new_path=p.with_name(p.stem.removesuffix("(Encrypted)")+p.suffix)
+            p.rename(new_path)
+            self.file_path=str(new_path)
+            self.file_name_label.setText(self.file_path)
+            self.conform_msg_label.setText("Decrypted. Click Open to view the file.")
+        else:
+            self.conform_msg_label.setText("Can't decrypt: this file hasn't been encrypted.")
 
     def open_notepad(self):
-        self.conform_msg_label.setText(f"File has been {self.mode}ed.")
-        
+        # self.conform_msg_label.setText(f"File has been {self.mode}ed.")
         QDesktopServices.openUrl(QUrl.fromLocalFile(self.file_path))
 
 
