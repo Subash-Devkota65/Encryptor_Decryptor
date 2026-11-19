@@ -206,7 +206,6 @@ class endec(QWidget):
         metrics = QFontMetrics(self.conform_msg_label.font())
         if "(Encrypted)" in file_name:
             file_name = file_name.replace("(Encrypted)", "")  
-            print(file_name)
         short_file_name = metrics.elidedText(file_name, Qt.ElideMiddle,100)
         if "(Encrypted)" in self.file_path:
             short_file_name=short_file_name[0:-4]+"(Encrypted).txt"
