@@ -226,11 +226,11 @@ class endec(QWidget):
                 cipher_text=""
                 for letter in plane_text:
                         cipher_text+=key[self.all_chars_list.index(letter)]
-            with open (self.file_path,"w") as encrypted_file:
-                encrypted_file.write(cipher_text)
             p=Path(self.file_path)
             new_path=p.with_name(p.stem+"(Encrypted)"+p.suffix)
-            p.rename(new_path)
+            with open (new_path,"w") as encrypted_file:
+                encrypted_file.write(cipher_text)
+            Path(self.file_path).unlink()
             self.file_path=str(new_path)
             self.file_name_label.setText(self.file_path)
             self.conform_msg_label.setText("Encrypted. Click Open to view the file")
@@ -243,11 +243,11 @@ class endec(QWidget):
                 plane_text=""
                 for letter in cipher_text:
                     plane_text+=self.all_chars_list[key.index(letter)]
-            with open (self.file_path,"w") as plane_file:
-                plane_file.write(plane_text)
             p=Path(self.file_path)
             new_path=p.with_name(p.stem.removesuffix("(Encrypted)")+p.suffix)
-            p.rename(new_path)
+            with open (new_path,"w") as plane_file:
+                plane_file.write(plane_text)
+            Path(self.file_path).unlink()
             self.file_path=str(new_path)
             self.file_name_label.setText(self.file_path)
             self.conform_msg_label.setText("Decrypted. Click Open to view the file.")
